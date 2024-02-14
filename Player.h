@@ -23,4 +23,13 @@ private:
 	int PictFlame;
 	int flameCounter;
 
+
+	enum State
+	{
+		S_WaIk = 0,
+		S_Cry,
+	};
+	State state;
+
+	void SetPosition(int x, int y);
 };

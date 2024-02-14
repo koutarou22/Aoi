@@ -3,6 +3,8 @@
 #include <assert.h>
 #include"Camera.h"
 #include"Stone.h"
+#include "Bird.h"
+#include "Field.h"
 
 namespace
 {
@@ -20,6 +22,9 @@ Player::Player(GameObject* parent) : GameObject(sceneTop)
 	transform_.position_.y = GROUND;
 	onGround = true;
 	flameCounter = 0;
+	animType = 0;
+	animFrame = 0;
+	state = 0;
 	/*cameraX = 50;*/
 }
 
@@ -33,6 +38,14 @@ Player::~Player()
 
 void Player::Update()
 {
+	Field* pField = GetParent()->FindGameObject<Field>();
+
+	if (state == S_Cry)
+	{
+		flameCounter++;
+		if (flameCounter);
+	}
+
 	if (CheckHitKey(KEY_INPUT_D))
 	{
 		transform_.position_.x += MOVE_SPEED;
@@ -86,12 +99,31 @@ void Player::Update()
 	Jump_P += GRAVITY; //速度 += 加速度
 	transform_.position_.y += Jump_P; //座標 += 速度
 
-	if (transform_.position_.y >= GROUND)//地面についたら速度を元に戻す、戻さないと貫通する恐れあり
+	if (pField != nullptr)
 	{
-		transform_.position_.y = GROUND;
-		Jump_P = 0.0f;
-		onGround = true;
+           int pushR = pField->CollisionDown(transform_.position_.x + 50, transform_.position_.y + 63);
+	       int pushL = pField->CollisionDown(transform_.position_.x + 14, transform_.position_.y + 63);
+	       int push = max(pushR, pushL);
+
+	    if (push >= 1)
+	    {
+		   transform_.position_.y -= push;
+	   	   Jump_P = 0.0f;
+		   onGround = true;
+
+	    }
+		else
+		{
+			onGround = false;
+		}
 	}
+	
+	//if (transform_.position_.y >= GROUND)//地面についたら速度を元に戻す、戻さないと貫通する恐れあり
+	//{
+	//	transform_.position_.y = GROUND;
+	//	Jump_P = 0.0f;
+	//	onGround = true;
+	//}
 
 	//------------------------------------------------------------------------------------------
 
@@ -100,8 +132,31 @@ void Player::Update()
 		Stone * st = Instantiate<Stone>(GetParent());
 		st->SetPosition(transform_.position_);
 	}
+
+	Bird* pBird = GetParent()->FindGameObject<Bird>();
+	if (pBird != nullptr)
+	{
+		if (pBird->CollideCircle(transform_.position_.x + 32.0f, transform_.position_.y + 32.0f, 20.0f))
+		{
+			transform_.position_.y = 0;
+			animType = 4;
+			animFrame = 0;
+			state = S_Cry;
+		}
+	}
+	//カメラ位置の調整
 	Camera* cam = GetParent()->FindGameObject<Camera>();
-	cam->SetValue(cam->GetValue() + 1);
+
+	int x = (int)transform_.position_.x - cam->GetValue();
+
+	if (x > 400)
+	{
+
+		x = 400;
+	   cam->SetValue((int)transform_.position_.x - x);
+
+	}
+	
 
 }
 
@@ -114,5 +169,9 @@ void Player::Draw()
 	{
 		x -= cam->GetValue();
 	}
-	DrawRectGraph(x , y , animFrame*64, 0, 64, 64, hImage, TRUE);
+	DrawRectGraph(x , y , animFrame*64, animType*64, 64, 64, hImage, TRUE);
+}
+
+void Player::Setposition(int x, int y)
+{
 }
